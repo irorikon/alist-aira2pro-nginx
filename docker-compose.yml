@@ -1,0 +1,79 @@
+version: '3'
+services:
+  Alist:
+    container_name: alist
+    image: xhofe/alist:latest
+    restart: unless-stopped
+    network_mode: bridge
+    # ports:
+    #   - 5244:5244
+    volumes:
+      - storage:/storage
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+
+  Aria2-Pro:
+    container_name: aira2
+    image: p3terx/aria2-pro:latest
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      # - 6800:6800
+      - 6888:6888
+      - 6888:6888/udp
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+    environment:
+      - PUID=65534
+      - PGID=65534
+      - UMASK_SET=022
+      - RPC_SECRET=alist
+      - RPC_PORT=6800
+      - LISTEN_PORT=6888
+      - DISK_CACHE=64M
+      - IPV6_MODE=false
+      - UPDATE_TRACKERS=true
+      - CUSTOM_TRACKER_URL=
+      - TZ=Asia/Shanghai
+    volumes:
+      - storage:/downloads
+      - ${PWD}/aria2-config:/config
+
+  AiraNG:
+    container_name: airang
+    image: p3terx/ariang:latest
+    command: --port 6880 --ipv6
+    network_mode: bridge
+    # ports:
+    #   - 6880:6880
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+  
+  Nginx:
+    container_name: nginx
+    image: nginx:latest
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ${PWD}/nginx-config:/etc/nginx/conf.d/
+    links:
+      - Alist:alist
+      - Aria2-Pro:aira2
+      - AiraNG:ariang
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+
+volumes:
+  storage:
